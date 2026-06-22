@@ -19,7 +19,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly MidiExportService _midiExportService;
     private readonly PresetManagerService _presetService;
     private readonly DispatcherTimer _playbackTimer;
+    private readonly Stopwatch _playbackClock = new();
     private SampleTrack _track = new();
+    private long _processedStepCount;
+    private long _clockAnchorStepCount;
     private bool _disposed;
 
     public MainViewModel()
@@ -38,6 +41,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         Steps = new ObservableCollection<StepViewModel>(
             Enumerable.Range(0, TimingConstants.TotalSteps).Select(index => new StepViewModel(index)));
+        BarGroups = SequencerLayout.CreateBarGroups(Steps);
 
         PresetDirectory = _presetService.PresetDirectory;
         FilteredPresets = CollectionViewSource.GetDefaultView(PresetList);
@@ -45,7 +49,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         _playbackTimer = new DispatcherTimer(DispatcherPriority.Send)
         {
-            Interval = GetStepInterval(Bpm)
+            Interval = TimeSpan.FromMilliseconds(4)
         };
         _playbackTimer.Tick += PlaybackTimerOnTick;
 
@@ -57,6 +61,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public event Action? GridRefreshRequested;
 
     public ObservableCollection<StepViewModel> Steps { get; }
+    public IReadOnlyList<BarGroupViewModel> BarGroups { get; }
     public ObservableCollection<PresetFileInfo> PresetList { get; } = new();
     public ICollectionView FilteredPresets { get; }
     public IReadOnlyList<string> Categories { get; } = ["All", "Kick", "Snare", "Hat", "Custom"];
@@ -113,7 +118,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         _session.BPM = value;
-        _playbackTimer.Interval = GetStepInterval(value);
+        if (IsPlaying)
+            ReanchorPlaybackClock();
     }
 
     partial void OnMidiNoteNumberChanged(byte value)
@@ -214,7 +220,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _session.IsPlaying = true;
         _session.PlayheadIndex = 0;
         IsPlaying = true;
-        ProcessCurrentStep();
+        ProcessStep(0);
+        if (!IsPlaying)
+            return;
+
+        _processedStepCount = 1;
+        _clockAnchorStepCount = _processedStepCount;
+        _playbackClock.Restart();
         _playbackTimer.Start();
         Report(_audioEngine.HasSample ? "Playing pattern." : "Playing silently: load a sample for audio.");
     }
@@ -361,11 +373,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void PlaybackTimerOnTick(object? sender, EventArgs e) => ProcessCurrentStep();
-
-    private void ProcessCurrentStep()
+    private void PlaybackTimerOnTick(object? sender, EventArgs e)
     {
-        var currentStep = _session.PlayheadIndex;
+        if (!IsPlaying)
+            return;
+
+        var expectedStepCount = SequencerTimeline.GetExpectedProcessedStepCount(
+            _clockAnchorStepCount,
+            _playbackClock.Elapsed.TotalMilliseconds,
+            Bpm);
+        if (expectedStepCount <= _processedStepCount)
+            return;
+
+        // Do not bunch a long backlog of samples after the UI thread was blocked.
+        if (expectedStepCount - _processedStepCount > 2)
+            _processedStepCount = expectedStepCount - 1;
+
+        while (_processedStepCount < expectedStepCount && IsPlaying)
+        {
+            ProcessStep(SequencerTimeline.GetStepIndex(_processedStepCount));
+            _processedStepCount++;
+        }
+    }
+
+    private void ProcessStep(int currentStep)
+    {
         SetPlayhead(currentStep);
 
         if (_session.GridSteps[currentStep])
@@ -388,11 +420,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void StopPlayback()
     {
         _playbackTimer.Stop();
+        _playbackClock.Reset();
         _audioEngine.StopAll();
         _session.IsPlaying = false;
         _session.PlayheadIndex = 0;
+        _processedStepCount = 0;
+        _clockAnchorStepCount = 0;
         IsPlaying = false;
         SetPlayhead(-1);
+    }
+
+    private void ReanchorPlaybackClock()
+    {
+        _clockAnchorStepCount = _processedStepCount;
+        _playbackClock.Restart();
     }
 
     private void SetPlayhead(int index)
@@ -462,6 +503,4 @@ public partial class MainViewModel : ObservableObject, IDisposable
             NotificationRequested?.Invoke(message, isError);
     }
 
-    private static TimeSpan GetStepInterval(int bpm)
-        => TimeSpan.FromMilliseconds(15_000d / Math.Clamp(bpm, 20, 400));
 }

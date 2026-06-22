@@ -91,76 +91,120 @@
                     BorderBrush="#343434"
                     BorderThickness="1"
                     CornerRadius="4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Row="0" Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="BARS 1-4" Foreground="{StaticResource TextMutedBrush}" FontFamily="Consolas" />
-                        <TextBlock Grid.Column="1" Text="BARS 5-8" Foreground="{StaticResource TextMutedBrush}" FontFamily="Consolas" />
-                        <TextBlock Grid.Column="2" Text="BARS 9-12" Foreground="{StaticResource TextMutedBrush}" FontFamily="Consolas" />
-                        <TextBlock Grid.Column="3" Text="BARS 13-16" Foreground="{StaticResource TextMutedBrush}" FontFamily="Consolas" />
-                    </Grid>
-
-                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Steps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="16" Rows="16" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding BarGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Command="{Binding DataContext.ToggleStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}"
-                                        Margin="2"
-                                        Padding="0"
-                                        ToolTip="{Binding BarNumber, StringFormat=Bar {0}}">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Background" Value="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" />
-                                            <Setter Property="BorderBrush" Value="#444444" />
-                                            <Setter Property="BorderThickness" Value="1" />
-                                            <Setter Property="Cursor" Value="Hand" />
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="StepBorder"
-                                                                MinHeight="25"
-                                                                Background="{TemplateBinding Background}"
-                                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                                BorderThickness="{TemplateBinding BorderThickness}"
-                                                                CornerRadius="2" />
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="StepBorder" Property="Opacity" Value="0.78" />
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsBeat}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="#777777" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsPlayhead}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{StaticResource PlayheadBorderBrush}" />
-                                                    <Setter Property="BorderThickness" Value="2" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
+                                <Border Margin="0,0,0,8"
+                                        Padding="6"
+                                        Background="#181818"
+                                        BorderBrush="#343434"
+                                        BorderThickness="1"
+                                        CornerRadius="3">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0"
+                                                   Margin="2,0,0,4"
+                                                   Text="{Binding Label}"
+                                                   FontFamily="Consolas"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource AccentBrush}" />
+                                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Bars}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="4" Rows="1" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="2"
+                                                            Padding="3"
+                                                            Background="#202020"
+                                                            BorderBrush="#454545"
+                                                            BorderThickness="1"
+                                                            CornerRadius="2">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                            </Grid.RowDefinitions>
+                                                            <TextBlock Grid.Row="0"
+                                                                       Margin="1,0,0,3"
+                                                                       Text="{Binding BarNumber, StringFormat=BAR {0}}"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="9"
+                                                                       Foreground="{StaticResource TextMutedBrush}" />
+                                                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Steps}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <UniformGrid Columns="16" Rows="1" />
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Button Command="{Binding DataContext.ToggleStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                                CommandParameter="{Binding}"
+                                                                                Margin="1"
+                                                                                Padding="0">
+                                                                            <Button.ToolTip>
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{Binding BarNumber, StringFormat=Bar {0}}" />
+                                                                                    <TextBlock Text="{Binding StepInBar, StringFormat=Step {0}}" />
+                                                                                </StackPanel>
+                                                                            </Button.ToolTip>
+                                                                            <Button.Style>
+                                                                                <Style TargetType="Button">
+                                                                                    <Setter Property="Background" Value="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}" />
+                                                                                    <Setter Property="BorderBrush" Value="#444444" />
+                                                                                    <Setter Property="BorderThickness" Value="1" />
+                                                                                    <Setter Property="Cursor" Value="Hand" />
+                                                                                    <Setter Property="Template">
+                                                                                        <Setter.Value>
+                                                                                            <ControlTemplate TargetType="Button">
+                                                                                                <Border x:Name="StepBorder"
+                                                                                                        MinHeight="28"
+                                                                                                        Background="{TemplateBinding Background}"
+                                                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                                                                        CornerRadius="1" />
+                                                                                                <ControlTemplate.Triggers>
+                                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                                        <Setter TargetName="StepBorder" Property="Opacity" Value="0.78" />
+                                                                                                    </Trigger>
+                                                                                                </ControlTemplate.Triggers>
+                                                                                            </ControlTemplate>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding IsBeat}" Value="True">
+                                                                                            <Setter Property="BorderBrush" Value="#777777" />
+                                                                                        </DataTrigger>
+                                                                                        <DataTrigger Binding="{Binding IsPlayhead}" Value="True">
+                                                                                            <Setter Property="BorderBrush" Value="{StaticResource PlayheadBorderBrush}" />
+                                                                                            <Setter Property="BorderThickness" Value="2" />
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </Button.Style>
+                                                                        </Button>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </Grid>
+                </ScrollViewer>
             </Border>
 
             <Grid Grid.Row="3" Margin="0,14,0,0">
